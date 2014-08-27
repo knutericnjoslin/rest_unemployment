@@ -49,6 +49,7 @@ as well as the varaince of the simulated posteriors, Y(5).
 
 
 
+
 value_func.m
 ------------
 
@@ -70,6 +71,32 @@ This value function
 12. w_mixed
 13. N
 
+### Script
+
+1. Construct posteriors depending on searching or resting
+    * pi_post_w: 10000x101 matrix of posteriors, each column associated with one of the 101
+priors on the unit interval and each of the 10000 rows associated with an observation 
+of a wage draw from the mixed distribution. 
+        * Uses (i) fxn_pi_post with 10000x101 draws from mixed, (2) ones(10000, 1)*pi_grid, (39 the 
+values of the means of the (possible) underlying normals, and the variance for searchers
+    * pi_post_eta: The same as pi_post_w but for the resting workers with large variance. 
+2. Construct the continuation values: Because we only make calculation for each distinct prior
+in pi_prior we use linear interpolation between the points to associate a value with each 
+posterior. 
+    *  For each pi_prior we associate a value W. Linear interpolation between these point.
+Based on pi_post_w (or pi_post_eta) we select value V_S_cont = beta*1/N*sum(interp1(pi_grid, W, pi_post_w, 'linear'), 1)
+Creates a 1x101 vector, one value associated with each intial prior. 
+3. Compute the expected wage from searching
+    * Compare each wage draw (w_mixed_w) to the unemployment benefit b and select maximum, creates 10000x101 matrix
+    * Compute the average (expected) wage draw by summing each column and dividing by 10000
+4. Compute the new values by adding together continuation and expected wage 
+minus search cost (k) for searchers, and adding the unemployment benefit and
+continution for resting workers. These will be vectors of length 101, associated with each prior. 
+5. Select max of searching and resting. This is value associated with each prior. 
+6. If V_S larger than V_R and V_S > U then the worker searches. If V_R > V_S and V_R > U, 
+worker rests. If U > V_S, V_r, the worker exists. 
+
+
 
 
 
@@ -82,3 +109,34 @@ do_output.m
 * w_old
 * u, v
 * For each element of u 
+
+### Output
+
+* 
+
+### Script
+
+First section:
+* Constructs a vector of 1000 priors evenly
+spaced on the unit interval. 
+* Next, constructs a 1000x5 matrix of zeros to hold the moments for each of the priors.
+and use fxn_belief_moments to fill this matrix with the priors. 
+
+Second Section: 
+1. Construct the mixed distributions:
+    * Construct a vector of 100 (actually 101) evenly spaced priors on the unit interval;
+we call this vector *pi_grid*: 1/100 .*x, where x=0:1:100
+    * Use as an initial guess for the value of the value function (W_old) some constant that
+is the same for each prior: For example, W_old = 11.5 * ones(1, length(pi_grid))
+    * Construct u,v, two 10000x101 matricies of random draws from the uniform. We will use
+these to construct random draws from the two (normal) wage distributions.
+    * Use u to construct the draws from the mixed distribution, generating
+w_norm_mu_0 and w_norm_mu_1, 10000x101 matricies of draws from respectively, a normal 
+with mean 0 and mean 1. Both have the variance associated with the searchers.
+    * Using the wage draws, construct the draws from the mixed distribution w_mixed.
+We use v to ``select'' which underlying distribution we choose. 
+    * We then construct the mixed distribution for the non-searchers. This is identical
+except that the variance of the normals are more dispersed (variance eta > variance w)
+2. Run the value function iteration and see if distance between W_new and W_old
+satisfy the stopping criteria. 
+3. When the stopping critera, run the value function one more time to give the output. 
